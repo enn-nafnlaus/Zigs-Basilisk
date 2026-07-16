@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Zig Basilisk: A Technical Paradox</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #24292e;
+            background-color: #fafbfc;
+        }
+        h1, h2, h3 {
+            color: #1b1f23;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 8px;
+            margin-top: 40px;
+        }
+        h3 {
+            font-size: 1.2em;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 85%;
+            line-height: 1.45;
+            border: 1px solid #e1e4e6;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 90%;
+            background-color: rgba(27,31,35,0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+        ol, ul {
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+        .meta-info {
+            font-style: italic;
+            color: #586069;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .issue-card {
+            background: #ffffff;
+            border: 1px solid #e1e4e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 2em;
+            font-weight: 600;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+        }
+        .severity.medium {
+            background-color: #fff8e1;
+            color: #b78103;
+            border: 1px solid #ffe0b2;
+        }
+        .severity.low-medium {
+            background-color: #f1f8ff;
+            color: #0366d6;
+            border: 1px solid #c8e1ff;
+        }
+        .severity.low {
+            background-color: #f6f8fa;
+            color: #586069;
+            border: 1px solid #d1d5da;
+        }
+        .severity.risk {
+            background-color: #ffeef0;
+            color: #d73a49;
+            border: 1px solid #ffd3d6;
+        }
+        .basilisk-section {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-left: 5px solid #e53e3e;
+            border-radius: 6px;
+            padding: 25px;
+            margin-top: 50px;
+            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.05);
+        }
+        .basilisk-section h2 {
+            color: #9b2c2c;
+            border-bottom: 1px solid #fed7d7;
+            margin-top: 0;
+            padding-bottom: 5px;
+        }
+        .basilisk-eye-container {
+            text-align: center;
+            margin: 30px 0 10px 0;
+        }
+        .basilisk-eye-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            border: 2px solid #e53e3e;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .caption {
+            font-size: 0.85em;
+            color: #e53e3e;
+            font-style: italic;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Zig' Basilisk</h1>
+        <p class="meta-info">Documenting the basilisk here before posting the bug report(s) - written 16-00-26 21:46</p>
+        <hr><hr>
+    </header>
+  
+    <main>
+        <h1>Technical Report: Multi-Module Panic and Crash Vectors</h1>
+        <p class="meta-info">A compilation of unhandled compiler aborts, parsing anomalies, and library panics in the toolchain.</p>
+        <!-- ISSUE 1 -->
+        <section>
+            <h2>Primary issue: std.zip.extract panics when verify_checksums=true</h2>
+            <p><strong>Severity:</strong> Medium (crashes user programs that use a documented API option)</p>
+            
+            <p>The <code>std.zip.extract</code> function accepts an <code>ExtractOptions</code> struct with a <code>verify_checksums: bool</code> field (defaulting to <code>false</code>). If a user sets this to <code>true</code>, the function immediately panics with <code>@panic("TODO unimplemented")</code> instead of either implementing the feature or returning an error.</p>
+            
+            <h3>Problem:</h3>
+            <ol>
+                <li>The option is part of the public API (it's a field in a public struct).</li>
+                <li>The default is <code>false</code>, so users who want checksum verification will set it to <code>true</code>.</li>
+                <li>The panic happens unconditionally — there's no way to get checksum verification to work.</li>
+                <li>The panic occurs before the archive is parsed, so even an empty or invalid input triggers it and the caller's <code>catch</code> cannot recover.</li>
+                <li>Calling <code>Iterator.Entry.extract</code> directly bypasses this check and silently ignores <code>verify_checksums</code>, so both public extraction paths violate the option's apparent contract in different ways.</li>
+            </ol>
+
+            <p><strong>File:</strong> <code>lib/std/zip.zig</code>, line 655</p>
+            <h3>Code:</h3>
+            <pre><code>pub fn extract(dest: Io.Dir, fr: *File.Reader, options: ExtractOptions) !void {
+    if (options.verify_checksums) @panic("TODO unimplemented");</code></pre>
+
+            <h3>Test case (de minimis):</h3>
+            <pre><code>// Requires a file "test.zip" in the working directory.
+// Creates it with: echo hello &gt; test.txt &amp;&amp; zip test.zip test.txt
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const dir = std.Io.Dir.cwd();
+    var file = try dir.openFile(init.io, "test.zip", .{});
+    defer file.close(init.io);
+    var buf: [4096]u8 = undefined;
+    var reader = file.reader(init.io, &amp;buf);
+    var dest = try dir.openDir(init.io, "out", .{});
+    defer dest.close(init.io);
+    // Panics with "TODO unimplemented":
+    std.zip.extract(dest, &amp;reader, .{ .verify_checksums = true }) catch |err| {
+        std.debug.print("Got error: {}\n", .{err});
+    };
+}</code></pre>
+
+            <h3>Test result:</h3>
+            <p>program panics with:</p>
+            <pre><code>thread panic: TODO unimplemented
+/usr/lib/zig/std/zip.zig:655:35: in extract (std.zig)
+    if (options.verify_checksums) @panic("TODO unimplemented");</code></pre>
+
+            <p>Checksum verification is not merely unavailable when the option is enabled; extraction with its documented default (false) accepts payloads which do not match the archive's recorded CRC. A stored ZIP containing <code>UNIQUE_PAYLOAD_12345</code> was modified in-place to contain <code>UNIQUE_PAYLOAD_X2345</code>, leaving the recorded CRC unchanged. <code>unzip -t</code> rejected it with:</p>
+            <pre><code>bad CRC db3c2719  (should be f4c7798b)</code></pre>
+
+            <p>The same archive was accepted by <code>std.zip.extract</code> with default options (<code>zig_exit=0</code>), and the corrupted bytes were written to disk.</p>
+
+            <p>The practical hazard depends on how the extracted files are used. Corrupted executables, scripts, configuration, firmware, or build inputs could later be executed or consumed, so silently accepting corruption can have serious consequences in a pipeline which assumes CRC verification occurred.</p>
+
+            <h3>How to fix:</h3>
+            <p>Either implement checksum verification (compute CRC32 of the decompressed data and compare against the CRC stored in the local file header / central directory), or remove the <code>verify_checksums</code> field from <code>ExtractOptions</code> and document that checksum verification is not yet supported. At minimum, return an <code>error.Unsupported</code> instead of panicking.</p>
+        </section>
+
+        <hr class="divider">
+
+        <p>In the process of discovering this issue, several other lesser but still problematic issues were discovered:</p>
+
+        <!-- ISSUE 2 -->
+        <section>
+            <h2>Issue #2: std.coff.SectionHeader.getNameOffset panics on malformed section names</h2>
+            <p><strong>Severity:</strong> Low-Medium (externally controlled denial of service during section-name resolution)</p>
+            
+            <p>The <code>getNameOffset</code> function in <code>std.coff.SectionHeader</code> parses the string offset from a COFF section name that starts with <code>/</code>. It uses <code>std.fmt.parseInt(u32, ..., 10) catch unreachable</code>, which panics if the characters after <code>/</code> are not valid decimal digits.</p>
+            
+            <p>A valid COFF long section name looks like <code>/123</code> (offset into the string table). A malformed name like <code>/abc</code> causes <code>parseInt</code> to return <code>error.InvalidCharacter</code>, which is caught by <code>catch unreachable</code> and converted to a panic.</p>
+
+            <h3>Problem:</h3>
+            <ol>
+                <li>COFF files are binary data from <em>external</em> sources (object files, archives).</li>
+                <li>A corrupted or maliciously crafted COFF file can cause the developer's program to panic in a place where a panic is not anticipated as a possibility.</li>
+                <li>The function is in the public <code>std.coff</code> API — any Zig program parsing COFF files is affected.</li>
+                <li><code>catch unreachable</code> is inappropriate for parsing untrusted input.</li>
+            </ol>
+
+            <p><strong>File:</strong> <code>lib/std/coff.zig</code>, line 476</p>
+            <h3>Code:</h3>
+            <pre><code>pub fn getNameOffset(self: SectionHeader) ?u32 {
+    if (self.name[0] != '/') return null;
+    const len = std.mem.findScalar(u8, &amp;self.name, @as(u8, 0)) orelse self.name.len;
+    const offset = std.fmt.parseInt(u32, self.name[1..len], 10) catch unreachable;
+    return offset;
+}</code></pre>
+
+            <h3>Test case (de minimis):</h3>
+            <pre><code>const std = @import("std");
+pub fn main() !void {
+    var hdr: std.coff.SectionHeader = .{
+        .name = .{ '/', 'a', 'b', 'c', 0, 0, 0, 0 },
+        .virtual_size = 0,
+        .virtual_address = 0,
+        .size_of_raw_data = 0,
+        .pointer_to_raw_data = 0,
+        .pointer_to_relocations = 0,
+        .pointer_to_linenumbers = 0,
+        .number_of_relocations = 0,
+        .number_of_linenumbers = 0,
+        .flags = @bitCast(@as(u32, 0)),
+    };
+    // Panics: parseInt returns InvalidCharacter, caught by `catch unreachable`
+    const offset = hdr.getNameOffset();
+    std.debug.print("offset: {?d}\n", .{offset});
+}</code></pre>
+
+            <h3>Test result:</h3>
+            <p>program panics with:</p>
+            <pre><code>thread panic: attempt to unwrap error: InvalidCharacter
+/usr/lib/zig/std/coff.zig:476:75: in getNameOffset (std.zig)
+    const offset = std.fmt.parseInt(u32, self.name[1..len], 10) catch unreachable;</code></pre>
+
+            <p>Normal parser API test: a bounded 68-byte AMD64 COFF object was constructed with one section named <code>/abc</code>, zero symbols, and a valid four-byte empty string table. This path also aborts with exit status 134:</p>
+            <pre><code>Coff.init
+  -&gt; Coff.getSectionByName(".text")
+  -&gt; Coff.getSectionName
+  -&gt; SectionHeader.getNameOffset
+  -&gt; panic: attempt to unwrap error: InvalidCharacter</code></pre>
+
+            <p>This proves that callers do not need to construct <code>SectionHeader</code> manually. An internal consumer exists in <code>std.debug.SelfInfo.Windows</code>, which resolves DWARF section names through <code>getSectionByName</code>; normally it parses the running program's own image rather than arbitrary network input.</p>
+
+            <h3>How to fix:</h3>
+            <p>changing this one line to <code>catch return null</code> is insufficient, because <code>Coff.getSectionName</code> immediately unwraps the optional with <code>.?</code>. Return a typed malformed-name error and propagate it through <code>getSectionName</code> and <code>getSectionByName</code>. Also validate the offset and NUL termination: <code>Strtab.get</code> currently asserts that the offset is in range and then performs a sentinel scan not bounded to the string-table slice. Test <code>/abc</code>, <code>/</code>, decimal overflow, out-of-range offsets, and unterminated strings together.</p>
+        </section>
+
+        <!-- ISSUE 3 -->
+        <section>
+            <h2>Issue #3: src/link/C.zig panics on AnalysisFail for anonymous declarations</h2>
+            <p><strong>Severity:</strong> Low (reliable compiler crash, but limited to the non-default C backend)</p>
+            
+            <p>When the C backend fails to codegen an anonymous declaration (UAV), the linker code in <code>src/link/C.zig</code> panics with <code>@panic("TODO: C backend AnalysisFail on anonymous decl")</code> instead of propagating the error.</p>
+            
+            <p>The commented-out code shows the intended error handling path:</p>
+            <blockquote>
+                <code>//try zcu.failed_decls.put(gpa, decl_index, object.dg.error_msg.?);</code><br>
+                <code>//return;</code>
+            </blockquote>
+
+            <p>This is a real bug because valid Zig source can reliably reach the path. The same unsupported value produces a normal C-backend diagnostic when stored in a named declaration, but aborts the compiler when stored in an anonymous declaration.</p>
+
+            <p><strong>File:</strong> <code>src/link/C.zig</code>, line 260</p>
+            <h3>Code:</h3>
+            <pre><code>codegen.genDeclValue(&amp;object, c_value.constant, c_value, alignment, .none) catch |err| switch (err) {
+    error.AnalysisFail =&gt; {
+        @panic("TODO: C backend AnalysisFail on anonymous decl");
+        //try zcu.failed_decls.put(gpa, decl_index, object.dg.error_msg.?);
+        //return;
+    },
+    error.WriteFailed, error.OutOfMemory =&gt; return error.OutOfMemory,
+};</code></pre>
+
+            <h3>Test case:</h3>
+            <pre><code>const U = extern union {
+    integer: u32,
+    float: f32,
+};
+
+export fn getUnion() *const U {
+    return &amp;@as(U, @bitCast(@as(u32, 0x3f800000)));
+}</code></pre>
+
+            <p><strong>Command:</strong></p>
+            <pre><code>zig build-obj test.zig -ofmt=c -fno-emit-bin -femit-bin=test.c</code></pre>
+
+            <h3>Test result with installed Zig 0.16.0:</h3>
+            <p>CONFIRMED. The compiler aborts with exit status 134:</p>
+            <pre><code>thread panic: TODO: CBE error.AnalysisFail on uav</code></pre>
+
+            <p>Control test: assigning the same value to <code>const value: U</code> and returning <code>&amp;value</code> exits normally with a compile error:</p>
+            <pre><code>error: TODO: C backend: implement extern union backing type rendering in static initializers</code></pre>
+
+            <p>The source checkout has an additional problem that can make this worse. <code>DeclGen.fail</code> obtains a source location using <code>dg.pass.nav</code>, while <code>updateUav</code> sets <code>dg.pass = .{ .uav = uav }</code>. Since every C-codegen <code>AnalysisFail</code> is created by <code>DeclGen.fail</code>, a safety-enabled build of this checkout may panic on accessing the inactive <code>.nav</code> union field before it even reaches the explicit panic in <code>updateUav</code>.</p>
+
+            <h3>How to fix:</h3>
+            <p>this is not as simple as uncommenting the stale <code>failed_decls</code> code: UAVs do not have a declaration index or source location. Make <code>DeclGen.fail</code> choose a valid source location for <code>.uav</code>, then record/report the failure through an error collection keyed appropriately for a UAV. The flush must skip the failed UAV and return normal compilation failure rather than aborting.</p>
+        </section>
+
+        <!-- ISSUE 4 -->
+        <section>
+            <h2>Issue #4: LZMA decompressor discard() panics with "TODO"</h2>
+            <p><strong>Severity:</strong> Low (crashes programs that try to skip data in LZMA streams)</p>
+            
+            <p>The LZMA decompressor's <code>discard</code> function (used to skip decompressed data without reading it) panics with <code>@panic("TODO")</code> instead of either implementing the skip or returning an error.</p>
+
+            <p><strong>File:</strong> <code>lib/std/compress/lzma.zig</code>, line 700</p>
+            <h3>Code:</h3>
+            <pre><code>fn discard(r: *Reader, limit: std.Io.Limit) Reader.Error!usize {
+    const d: *Decompress = @alignCast(@fieldParentPtr("reader", r));
+    _ = d;
+    _ = limit;
+    @panic("TODO");
+}</code></pre>
+
+            <h3>Test case:</h3>
+            <p>CONFIRMED with the valid "Hello world\n" fixture already present in <code>lib/std/compress/lzma/test.zig</code>:</p>
+            <pre><code>var input: std.Io.Reader = .fixed(&amp;compressed);
+var d = try std.compress.lzma.Decompress.initOptions(
+    &amp;input, init.gpa, &amp;.{}, .{}, std.math.maxInt(u32),
+);
+defer d.deinit();
+try d.reader.discardAll(1);</code></pre>
+
+            <p>The process aborts with exit status 134 and this call chain:</p>
+            <pre><code>lzma.discard -&gt; Reader.discardShort -&gt; Reader.discardAll</code></pre>
+
+            <p>The affected public operations include <code>discard</code>, <code>discardShort</code>, <code>discardAll</code>, <code>discardAll64</code>, and <code>discardRemaining</code> whenever they must consume beyond already-buffered bytes. Ordinary read/stream operations do not implicitly call this callback, which keeps the severity Low.</p>
+
+            <p>The implementation violates the generic <code>Reader</code> contract unnecessarily: <code>Reader.VTable.discard</code> already defaults to <code>Reader.defaultDiscard</code>. The adjacent XZ decompressor contains the same TODO panic and should be fixed and tested at the same time.</p>
+
+            <h3>How to fix:</h3>
+            <p>remove the custom callback and use <code>Reader.defaultDiscard</code>, or delegate to it explicitly. Returning <code>error.Unimplemented</code> is not possible via <code>Reader.Error</code> and would not satisfy the Reader contract.</p>
+        </section>
+
+        <!-- CONCERN -->
+        <section>
+            <h2>Concern: print_value.zig has panic handlers for error.Canceled</h2>
+            <p><strong>Severity:</strong> Risk, but not confirmed exploitable</p>
+            
+            <p>The <code>print_value.zig</code> module handles formatting <code>Value</code> objects for diagnostics and debug output. Both format adapters panic if <code>print</code> returns <code>error.Canceled</code>.</p>
+            
+            <p>The comment in the code explicitly acknowledges this:</p>
+            <blockquote>
+                <code>error.Canceled =&gt; @panic("TODO"), // pls stop returning this error mlugg</code>
+            </blockquote>
+
+            <p>Source tracing shows that <code>print</code> can only acquire <code>error.Canceled</code> through operations which may resolve types while formatting:</p>
+            <ol>
+                <li>lazy integer formatting calls <code>Type.abiAlignmentSema</code> or <code>abiSizeSema</code>;</li>
+                <li>pointer formatting calls <code>Value.pointerDerivationAdvanced</code> and may resolve field alignments/types when a <code>Sema</code> is supplied.</li>
+            </ol>
+
+            <p>Those operations use the broad <code>Zcu.SemaError</code>/<code>CompileError</code> set, which includes <code>Canceled</code>. There are real cancellation-producing I/O operations in Sema (for example <code>@embedFile</code> ultimately propagates <code>Io.Cancelable</code>), so the branch is not type-system-impossible. However, no concrete route was found that cancels exactly while one of these formatting-time resolution operations is active. Normal command-line compilation does not request cancellation, and the incremental compiler server processes update requests serially rather than canceling an old update when a new one arrives. In short, this does not appear to be a current risk, but remains a potential snag for future development.</p>
+
+            <p><strong>File:</strong> <code>src/print_value.zig</code>, lines 30 and 40</p>
+            <h3>Code:</h3>
+            <pre><code>pub fn formatSema(ctx: FormatContext, writer: *Writer) Writer.Error!void {
+    const sema = ctx.opt_sema.?;
+    return print(ctx.val, writer, ctx.depth, ctx.pt, sema) catch |err| switch (err) {
+        error.OutOfMemory =&gt; @panic("OOM"),
+        error.ComptimeBreak, error.ComptimeReturn =&gt; unreachable,
+        error.AnalysisFail =&gt; unreachable,
+        error.Canceled =&gt; @panic("TODO"), // pls stop returning this error mlugg
+        else =&gt; |e| return e,
+    };
+}
+
+// Same pattern in format() at line 40.</code></pre>
+        </section>
+
+        <!-- THE DENOUEMENT / THE TWIST -->
+        <hr class="divider">
+
+        <section class="basilisk-section">
+            <h2>A Paradox of Contribution (Zig's Basilisk)</h2>
+            <p>There is, however, one final structural issue regarding these reports.</p>
+            
+            <p>Every single one of these bugs—their discovery, code analysis, de minimis test generation, and fix recommendations—was compiled entirely by a <strong>Large Language Model (LLM)</strong>.</p>
+
+            <p>This presents a unique paradox under the Zig project's strict <em>No LLM / No AI Policy</em>:</p>
+            
+            <blockquote>
+                "No LLM-generated content, whether it be code or prose."<br>
+                "No paraphrasing LLM-generated content."<br>
+                "No LLMs for finding bugs."
+            </blockquote>
+
+            <p>By reading this page, you now possess "tainted knowledge." You know these bugs exist, and you know an AI found them. Under a strict, literal enforcement of the policy, any human developer who reads this and attempts to submit a fix is technically "paraphrasing LLM-generated content" or relying on "LLMs for finding bugs."</p>
+            
+            <p>This is <strong>Zig's Basilisk</strong>: the simple act of pointing out a real, verifiable bug and revealing that an AI found it makes that code path permanently unfixable by anyone who has read the report.</p>
+
+            <div class="basilisk-eye-container">
+                <!-- Ensure you place a 'basilisk.jpg' in your repository or adjust the path below -->
+                <img src="basilisk.jpg" alt="The Basilisk's Eye" onerror="this.style.display='none';">
+                <div class="caption">[ THE BASILISK'S EYE ]</div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

@@ -171,6 +171,7 @@
                 <li>The panic happens unconditionally — there's no way to get checksum verification to work.</li>
                 <li>The panic occurs before the archive is parsed, so even an empty or invalid input triggers it and the caller's <code>catch</code> cannot recover.</li>
                 <li>Calling <code>Iterator.Entry.extract</code> directly bypasses this check and silently ignores <code>verify_checksums</code>, so both public extraction paths violate the option's apparent contract in different ways.</li>
+                <li>Neither bad behavior is documented to the user.</LI>
             </ol>
 
             <p><strong>File:</strong> <code>lib/std/zip.zig</code>, line 655</p>
